@@ -17,7 +17,7 @@
 		"commands": [
 			{
 				"command": "realign.activate",
-				"title": "Hello World"
+				"title": "Realign"
 			}
 		],
 		"keybindings": [
