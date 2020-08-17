@@ -5,12 +5,20 @@ Align code by regex!
 Based roughly on the amazing Sublime extension AlignTab that I miss dearly.  
 Find it here: https://github.com/randy3k/AlignTab
 
+
 ## Features
 
-- Align by user defined regex
-- Live updates
-- Custom fields!
+- Auto expand to applicable lines
 
+![](gifs/basic.gif)
+
+- Align by user defined regex
+
+![](gifs/statusbar.gif)
+
+- Filter by selection and define how many occurances to align on
+
+![](gifs/fields.gif)
 
 ## Extension Settings
 
