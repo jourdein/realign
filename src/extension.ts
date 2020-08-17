@@ -137,6 +137,7 @@ class AlignExt {
 				console.log("  To " + line_text);
 				e.replace(text_editor.document.lineAt(line_num).range, line_text);
 			}
+			this._edits = [];
 		}, { undoStopBefore:false, undoStopAfter:true});
 	}
 

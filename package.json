@@ -1,5 +1,7 @@
 {
 	"name": "realign",
+	"publisher": "MaxHillis",
+	"repository": {"url": "https://github.com/maxhillis/realign"},
 	"displayName": "ReAlign",
 	"description": "Align by regex",
 	"version": "0.0.1",
