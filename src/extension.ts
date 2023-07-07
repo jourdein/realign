@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let ext = new AlignExt();
 	let disposables = Array<vscode.Disposable>();
-	registerCommandNice('realign.activate',   function (args) { 
+	registerCommandNice('realigner.activate',   function (args) {
 		if (!ext.is_active()){
 			ext.activate();
 			disposables.push(registerCommandNice('type', function (args) { ext.type(args.text); }));
@@ -29,12 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
 			disposables.push(registerCommandNice('deleteLeft', function (args)     { ext.backspace('char'); }));
 		}
 	});
-	registerCommandNice('realign.backspace', function (args) { ext.backspace('char'); });
-	registerCommandNice('realign.confirm', function(args) { ext.confirm();
-		vscode.commands.executeCommand('realign.deactivate');
+	registerCommandNice('realigner.backspace', function (args) { ext.backspace('char'); });
+	registerCommandNice('realigner.confirm', function(args) { ext.confirm();
+		vscode.commands.executeCommand('realigner.deactivate');
 	 });
-	registerCommandNice('realign.deactivate', function (args) { 
-		ext.deactivate(); 
+	registerCommandNice('realigner.deactivate', function (args) {
+		ext.deactivate();
 		disposables.forEach(d => {
 			d.dispose();
 		});
@@ -53,7 +53,7 @@ class AlignExt {
 	private _selections: vscode.Selection[]|undefined;
 
 	constructor() {
-		this._active = new ContextKey('realign.active');
+		this._active = new ContextKey('realigner.active');
 
 		// Create the status bar
 		this._bar = new StatusBar();
@@ -75,7 +75,7 @@ class AlignExt {
 	}
 
 	public activate(): void{
-		console.log("Activating");
+		console.log("Activating Jourdein ReAligner");
 		this._editor = vscode.window.activeTextEditor;
 		if (this._editor === undefined) {
 			console.log("No active document. Not activating");
@@ -87,9 +87,9 @@ class AlignExt {
 		this._active.set(true);
 		this._selections = this._editor.selections;
 	}
-	
+
 	public deactivate(): void {
-		console.log("Deactivating");
+		console.log("Deactivating Jourdein ReAligner");
 		// Destroy bar
 		this._active.set(false);
 		this._bar.clear();
@@ -109,16 +109,18 @@ class AlignExt {
 		let after  = this._bar.backspace(modifier);
 		if ( before !== after ) {this.align();}
 	}
+
 	public type(text: string): void {
 		console.log("Typing in bar");
 		this._bar.type(text);
 		this.align();
 	}
+
 	public pattern(): [Options, RegExp|undefined] {
 		// Detect options
 		let text = this._bar.get_text();
 		return parse_pattern(text);
-		
+
 		// let pattern = this._bar.get_text();
 		// let match = pattern.match(/(.*)\/([lrcf]\d+)?([lrcf]\d+)?([lrcf]\d+)?([lrcf]\d+)?$/);
 		// let options = new Options(match);
@@ -142,7 +144,7 @@ class AlignExt {
 	}
 
 	public expand_lines(text_editor:vscode.TextEditor, regex:RegExp): Array<number>{
-		
+
 		// Expand selections where needed
 		let selections = this._selections;
 		if (selections === undefined) {return [];}
@@ -213,6 +215,7 @@ class AlignExt {
 
 			let lines = this.expand_lines(text_editor, regex);
 			let str_lines: Array<string> = [];
+
 			for (const num of lines) {
 				let str_line = text_doc.lineAt(num).text;
 				str_lines.push(str_line);
@@ -220,21 +223,18 @@ class AlignExt {
 			}
 
 			let splitter = new Splitter(str_lines, regex, options.fields, tab_size);
-			let rows = splitter.rows;
-			let wcols = splitter.col_widths;
-			let ind = splitter.indent;
 
 			console.log("Aligning lines " + (lines[0] + 1) + " to " + (lines[lines.length - 1] + 1));
 
-			let finals = splitter.to_lines(options.left, options.right);
-			
+			let finals = splitter.to_lines(options.alignments);
+
 			// Now make our edits
 			text_editor.edit(e => {
 				for (let i = 0; i < lines.length; i++) {
 					const line = text_doc.lineAt(lines[i]);
-					console.log("Changing line " + lines[i]);
+					// console.log("Changing line " + lines[i]);
 					e.replace(line.range, finals[i]);
-					console.log("New line is " + finals[i]);
+					// console.log("New line is " + finals[i]);
 				}
 			}, { undoStopBefore: false, undoStopAfter: false });
 
@@ -312,7 +312,7 @@ class StatusBar {
 		return this._statbar.text.slice(this._prefix.length, this._statbar.text.length-1);
 	}
 	public set_text(text:string) {
-		this._statbar.text = this._prefix + text + '|';
+		this._statbar.text = this._prefix + text + '_';
 	}
 
 	public show() {
@@ -324,39 +324,48 @@ class StatusBar {
 }
 
 export class Options {
-	public left: number;
-	public right: number;
 	public fields: number;
-	
-	constructor(match:Array<string>|null) {
-		this.left = -1;
-		this.right = -1;
-		this.fields = -1;
+	public alignments: Array<Array<string|number>>;
 
-		if ( match ) {
-			for (const it of match.slice(2)) {
-				if ( it === undefined ) {continue;}
-				let num = +it.slice(1);
-				if (it[0] === 'l'){
-					this.left = num;
+	constructor(match: Array<string>|null) {
+		this.fields = 1;
+		this.alignments = [];
 
-					if (this.right === -1) {this.right = 1;}
-				}
-				else if (it[0] === 'r'){
-					this.right = num;
+		// Fields / Repetition retrieval
+		if (match && match[3]) {
+			let num = 1;
+			const field = match[3];
 
-					if (this.left === -1) {this.left = 1;}
-				}
-				else if (it[0] === 'c'){
-					this.left  = num;
-					this.right = num;
-				}
-				else if (it[0] === 'f'){
-					this.fields = num;
-				}
+			if (field.length !== 1) { num = +field.slice(1); }
+
+			this.fields = num;
+		}
+
+		// Flag retrieval
+		if (match && match[2]) {
+
+			let align_data: Array<string|number> = [];
+
+			const flags = [...match[2].matchAll(/[lrc][0-9]*/g)];
+
+			for (const it of flags) {
+				if (it === undefined) { continue; }
+
+				// extract the captured flag
+				const flag  = it[0];
+				const align = flag.charAt(0);
+				let num = 1; // default padding
+
+				if (flag.length !== 1) { num = +flag.slice(1); }
+
+				if      (align === 'l') { align_data = [align, num]; }
+				else if (align === 'r') { align_data = [align, num]; }
+				else if (align === 'c') { align_data = [align, num]; }
+				else if (align === 'f') { this.fields = num; }
+
+				if (align_data.length > 0) { this.alignments.push(align_data); }
 			}
 		}
-		if ( this.left === -1 && this.right === -1 ) { this.left = 1; this.right = 1;}
 	}
 }
 
@@ -397,6 +406,7 @@ export class Splitter {
 
 			// Removes indentation and splits on regex
 			let row = line.trimLeft().split(this.regex);
+
 			if ( this.maxsplit > 0 && row.length > this.maxsplit ) {
 				let newrow = row.slice(0, this.maxsplit);
 				newrow.push(row.slice(this.maxsplit).join(""));
@@ -408,7 +418,7 @@ export class Splitter {
 				row[i] = row[i].trim();
 			}
 			this.rows.push(row);
-		}	
+		}
 		this.update_widths();
 	}
 
@@ -427,30 +437,102 @@ export class Splitter {
 		}
 	}
 
-	public to_lines(left:number, right:number): Array<string> {
+	fillSpaces(content: string, alignment: Array<string|number>, colWidth: number): string {
+
+		let align, padding = "";
+		let padLength = 1;
+		const fill = colWidth - content.length;
+
+		if (alignment) {
+			align = alignment[0];
+			padLength = alignment.length > 1 ? +alignment[1] : padLength;
+		}
+
+		padding = " ".repeat(padLength);
+
+		switch (align) {
+			case 'r':
+				content = " ".repeat(fill) + content + padding;
+				break;
+			case 'c': {
+				const halfFill = Math.floor(fill/2);
+				const lFill = " ".repeat(halfFill);
+				const rFill = " ".repeat(fill - halfFill);
+				content = lFill + content + rFill + padding;
+				break;
+			}
+			case 'l':
+			default:
+				content = content + " ".repeat(fill) + padding;
+				break;
+		}
+
+		return content;
+	}
+
+	public to_lines(alignments:Array<Array<string|number>>): Array<string> {
 		let finals = Array<string>();
+		const flagGroup = alignments.length !== 0 ? Math.ceil(alignments.length / 3) : 0;
+
+console.log("ROWS", this.rows);
 
 		for (let r = 0; r < this.rows.length; r++) {
 			let row = this.rows[r];
-			let farr :Array<string> = [" ".repeat(this.indent)];
+			let farr: Array<string> = [" ".repeat(this.indent)];
+			let modifiedColumn: Array<string> = [];
+
 			for (let c = 0; c < row.length; c++) {
-				if (this.col_widths[c] === 0) {continue;}
-				let width = row[c].length;
-				
-				// Put in left options
-				if ( c !== 0 && c%2!==0 ) {
-					farr.push(" ".repeat(left));
+
+				if (this.col_widths[c] === 0) { continue; }
+
+				const isOddColumn = c % 2 === 1;
+				let flagIdxCenter = 1;
+				let flagIdxLeft = flagIdxCenter - 1;
+				let flagIdxRight = flagIdxCenter + 1;
+
+				// derive flag indexes (left center right) based on
+				// center col and center flag index
+				if (isOddColumn && flagGroup !== 0) { // get odd col [a, :, b, :, c, :, d]
+					// if more flag group exist
+					// center flag would be [1, 4, 7, ...]
+					// group > 1
+					const maxFlagIdx = (flagGroup - 1) * 3; // define max group/existing group
+
+					// related with 'c'
+					// if c == 1 use group 1
+					// if c == 3 use group 2 ..and so on
+					const colGroup = Math.ceil(c / 2);
+					const flagIdx = (colGroup - 1) * 3;
+
+					// override defaults
+					// make sure idx is in range.
+					flagIdxLeft = flagIdx <= maxFlagIdx ? flagIdx : flagIdxLeft;
+					flagIdxCenter = flagIdxLeft + 1;
+					flagIdxRight = flagIdxCenter + 1;
 				}
 
-				// Put in the column
-				let pad = this.col_widths[c] - width;
-				farr.push(row[c] + " ".repeat(pad));
+				// instead of sequential alteration,
+				// do alteration based on center col (odd)
+				if (isOddColumn) {
+					// do on center
+					[
+						[c-1, flagIdxLeft],
+						[c,   flagIdxCenter],
+						[c+1, flagIdxRight]
+					].forEach(el => {
+						const [colIdx, flagIdx] = el;
+						let theRow = row[colIdx];
 
-				// Put in the right options
-				if (c%2 !== 0) {
-					farr.push(" ".repeat(right));
+						if (theRow === undefined) { return; }
+
+						theRow = this.fillSpaces(theRow, alignments[flagIdx], this.col_widths[colIdx]);
+						modifiedColumn[colIdx] = theRow;
+					});
 				}
 			}
+
+			farr.push(modifiedColumn.join(''));
+
 			let final = farr.join("").trimRight();
 			finals.push(final);
 		}
@@ -460,18 +542,20 @@ export class Splitter {
 
 export function parse_pattern(text:string): [Options, RegExp|undefined] {
 	// Detect options
-	let match = text.match(/(.*)\/([lrcf]\d+)?([lrcf]\d+)?([lrcf]\d+)?([lrcf]\d+)?$/);
+	let match = text.match(/(.+?)\/([lrc0-9]*)(f[0-9]*)?$/);
 	let options = new Options(match);
-	if (match !== null) { 
-		text = match[1];
-	}
+
+	if (match !== null) { text = match[1]; }
+
 	let regex:RegExp|undefined;
-	try{
+
+	try {
+console.log('=> Trying.. ', text);
 		regex = RegExp(`(${text})`);
-	}
-	catch(error) {
-		console.log("Bad regex");
+	} catch (error) {
+		console.log("Bad regex => ", text);
 		regex = undefined;
 	}
+
 	return [options, regex];
 }

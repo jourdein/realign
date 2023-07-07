@@ -1,79 +1,79 @@
 {
-	"name": "realign",
-	"publisher": "MaxHillis",
-	"repository": {"url": "https://github.com/maxhillis/realign"},
-	"displayName": "ReAlign",
-	"description": "Align by regex",
-	"version": "1.0.1",
-	"engines": {
-		"vscode": "^1.45.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onCommand:realign.activate"
-	],
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "realign.activate",
-				"title": "Realign"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "realign.backspace",
-				"key": "backspace",
-				"when": "realign.active && textInputFocus"
-			},
-			{
-				"command": "realign.deactivate",
-				"key": "escape",
-				"when": "realign.active"
-			},
-			{
-				"command": "realign.confirm",
-				"key": "enter",
-				"when": "realign.active"
-			},
-			{
-				"command": "realign.confirm",
-				"key": "enter",
-				"when": "realign.active"
-			},
-			{
-				"command": "realign.confirm",
-				"key": "ctrl+enter",
-				"when": "realign.active"
-			},
-			{
-				"command": "realign.confirm",
-				"key": "shift+enter",
-				"when": "realign.active"
-			}
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"lint": "eslint src --ext ts",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"test": "node ./out/test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.45.0",
-		"@types/glob": "^7.1.1",
-		"@types/mocha": "^7.0.2",
-		"@types/node": "^13.11.0",
-		"eslint": "^6.8.0",
-		"@typescript-eslint/parser": "^2.30.0",
-		"@typescript-eslint/eslint-plugin": "^2.30.0",
-		"glob": "^7.1.6",
-		"mocha": "^7.1.2",
-		"typescript": "^3.8.3",
-		"vscode-test": "^1.3.0"
-	}
+  "name": "realigner",
+  "publisher": "Jourdein",
+  "repository": {
+    "url": "https://github.com/jourdein/realign"
+  },
+  "displayName": "Another ReAligner",
+  "description": "Align by regex - Forked with ability to align columns",
+  "version": "1.1.0",
+  "engines": {
+    "vscode": "^1.79.2"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "realigner.activate",
+        "title": "ReAligner"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "realigner.backspace",
+        "key": "backspace",
+        "when": "realigner.active && textInputFocus"
+      },
+      {
+        "command": "realigner.deactivate",
+        "key": "escape",
+        "when": "realigner.active"
+      },
+      {
+        "command": "realigner.confirm",
+        "key": "enter",
+        "when": "realigner.active"
+      },
+      {
+        "command": "realigner.confirm",
+        "key": "enter",
+        "when": "realigner.active"
+      },
+      {
+        "command": "realigner.confirm",
+        "key": "ctrl+enter",
+        "when": "realigner.active"
+      },
+      {
+        "command": "realigner.confirm",
+        "key": "shift+enter",
+        "when": "realigner.active"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "lint": "eslint src --ext ts",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js",
+    "fulltest": "npm run pretest && npm run test"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.1",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^13.11.0",
+    "@types/vscode": "^1.45.0",
+    "@typescript-eslint/eslint-plugin": "^5.61.0",
+    "@typescript-eslint/parser": "^5.61.0",
+    "eslint": "^8.44.0",
+    "glob": "^7.1.6",
+    "mocha": "^10.2.0",
+    "typescript": "^3.8.3",
+    "vscode-test": "^1.3.0"
+  }
 }
